@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\UserController;
 |--------------------------------------------------------------------------
 */
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/register', [AuthController::class,'register']);
 
 /*
 |--------------------------------------------------------------------------
@@ -22,6 +23,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/me', [UserController::class, 'updateMe']);
     Route::delete('/me', [UserController::class, 'deleteMe']);
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::put('/user/profile', [UserController::class, 'updateProfile']);
+    Route::post('/user/image_profile', [UserController::class, 'updateImage']);
+    Route::put('/user/password', [UserController::class, 'updatePassword']);
 });
 
 // ADMIN + MANAGER uniquement

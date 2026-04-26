@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 
 class UserController extends Controller
 {
@@ -111,8 +112,8 @@ class UserController extends Controller
 
     /**
      * @OA\Put(
-     *     path="/api/me",
-     *     operationId="updateMe",
+     *     path="/api/user/profile",
+     *     operationId="updateUserProfile",
      *     tags={"Auth"},
      *     summary="Mettre à jour le profil courant",
      *     description="Permet à l'utilisateur connecté de modifier ses informations",
@@ -131,40 +132,56 @@ class UserController extends Controller
      *     )
      * )
      */
-    public function updateMe(Request $request)
+    public function updateProfile(Request $request)
     {
         $user = $request->user();
-
-        $request->validate([
-            'first_name' => 'sometimes|string',
-            'last_name' => 'sometimes|string',
-            'email' => 'sometimes|email|unique:users,email,' . $user->id,
-            'password' => 'sometimes|min:6',
+        $data = $request->validate([
+            'first_name' => 'required|string',
+            'last_name' => 'required|string',
+            'email' => 'required|email|unique:users,email,' . $user->id,
         ]);
-
-        if ($request->filled('first_name')) {
-            $user->first_name = $request->first_name;
-        }
-
-        if ($request->filled('last_name')) {
-            $user->last_name = $request->last_name;
-        }
-
-        if ($request->filled('email')) {
-            $user->email = $request->email;
-        }
-
-        if ($request->filled('password')) {
-            $user->password = Hash::make($request->password);
-        }
-
-        $user->save();
-
-        return response()->json([
-            'message' => 'Profil mis à jour',
-            'user' => $user
-        ]);
+        $user->update($data);
+        return response()->json($user);
     }
+
+
+    /**
+     * @OA\Put(
+     *     path="/api/user/password",
+     *     operationId="updatePassword",
+     *     tags={"Users"},
+     *     summary="Mettre à jour le mot de passe",
+     *     description="Permet de changer le mot de passe de l'utilisateur connecté",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"current_password", "new_password", "new_password_confirmation"},
+     *             @OA\Property(property="current_password", type="string", format="password", example="oldSecret123"),
+     *             @OA\Property(property="new_password", type="string", format="password", example="newSecret123"),
+     *             @OA\Property(property="new_password_confirmation", type="string", format="password", example="newSecret123")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Le mot de passe a été mis à jour"
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Erreur de validation"
+     *     )
+     * )
+     */
+    public function updatePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => 'required|current_password',
+            'new_password' => 'required|min:8|confirmed',
+        ]);
+        $request->user()->update(['password' => Hash::make($request->new_password)]);
+        return response()->json(['message' => 'Le mot de passe a été mis à jour']);
+    }
+
 
     /**
      * @OA\Delete(
@@ -190,5 +207,119 @@ class UserController extends Controller
         return response()->json([
             'message' => 'Compte supprimé avec succès'
         ]);
+    }
+
+    /**
+     * @OA\Post(
+     *     path="/api/user/image_profile",
+     *     operationId="updateImage",
+     *     tags={"Users"},
+     *     summary="Mettre à jour l'image de profil",
+     *     description="Permet de changer la photo de profil de l'utilisateur",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\MediaType(
+     *             mediaType="multipart/form-data",
+     *             @OA\Schema(
+     *                 required={"image_profil"},
+     *                 @OA\Property(
+     *                     property="image_profil",
+     *                     type="string",
+     *                     format="binary",
+     *                     description="L'image de profil à uploader"
+     *                 )
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Image mise à jour avec succès"
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Erreur de validation (fichier trop lourd ou mauvais format)"
+     *     )
+     * )
+     */
+    public function updateImage(Request $request)
+    {
+        $request->validate([
+            'image_profil' => 'required|image|max:2048',
+        ]);
+
+        $user = $request->user();
+
+        // Supprimer l'ancienne image si elle existe
+        if ($user->image_profil) {
+            // Enlever le préfixe "/storage/" si présent
+            $oldPath = str_replace('/storage/', '', $user->image_profil);
+            Storage::disk('public')->delete($oldPath);
+        }
+
+
+        $path = $request->file('image_profil')->store('image_profil', 'public');
+
+        $user->update([
+            'image_profil' => Storage::url($path),
+        ]);
+
+        return response()->json([
+            'image_profil' => $user->image_profil,
+        ]);
+    }
+
+    /**
+     * @OA\Put(
+     *     path="/api/me",
+     *     operationId="updateMe",
+     *     tags={"Auth"},
+     *     summary="Mettre à jour le profil courant via /api/me",
+     *     description="Identique à /api/user/profile. Permet à l'utilisateur connecté de modifier ses informations",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\RequestBody(
+     *         @OA\JsonContent(
+     *             @OA\Property(property="first_name", type="string", example="Jane"),
+     *             @OA\Property(property="last_name", type="string", example="Doe"),
+     *             @OA\Property(property="email", type="string", format="email", example="jane@example.com")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Profil mis à jour"
+     *     )
+     * )
+     */
+    public function updateMe(Request $request)
+    {
+        return $this->updateProfile($request);
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/api/loans",
+     *     operationId="getAllLoans",
+     *     tags={"Loans"},
+     *     summary="Lister tous les emprunts",
+     *     description="Récupère la liste de tous les emprunts",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Liste de tous les emprunts"
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Non authentifié"
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Accès refusé"
+     *     )
+     * )
+     */
+    public function get_all_loans(Request $request)
+    {
+        // TODO: Implémenter la logique
+        return response()->json([]);
     }
 }
