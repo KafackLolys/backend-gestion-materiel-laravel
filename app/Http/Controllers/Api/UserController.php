@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -16,7 +17,7 @@ class UserController extends Controller
      *     operationId="getUsers",
      *     tags={"Users"},
      *     summary="Lister les utilisateurs",
-     *     description="Récupère la liste de certains utilisateurs (admin, manager, teacher, student_delegate)",
+     *     description="Récupère la liste de tous les utilisateurs",
      *     security={{"bearerAuth":{}}},
      *     @OA\Response(
      *         response=200,
@@ -32,12 +33,65 @@ class UserController extends Controller
      *     )
      * )
      */
-    public function index()
+    public function index(Request $request)
     {
-        return User::whereIn('role', ['admin', 'manager', 'teacher', 'student_delegate'])
-            ->get();
-    }
+        $validated = $request->validate([
+            'page' => 'integer|min:1',
+            'per_page' => 'integer|min:1|max:100',
+            'search' => 'nullable|string|max:255',
+            'sort_by' => 'nullable|string',
+            'order' => 'nullable|string|in:asc,desc',
+        ]);
 
+        $perPage = $validated['per_page'] ?? 10;
+        $search = $validated['search'] ?? null;
+        $sortBy = $validated['sort_by'] ?? 'created_at';
+        $order = $validated['order'] ?? 'desc';
+
+        try {
+            $query = User::query();
+
+            // SEARCH GLOBAL
+            if ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('first_name', 'LIKE', "%{$search}%")
+                        ->orWhere('last_name', 'LIKE', "%{$search}%")
+                        ->orWhere('email', 'LIKE', "%{$search}%")
+                        ->orWhere('role', 'LIKE', "%{$search}%");
+                });
+            }
+
+            // ORDER BY DYNAMIQUE
+            $query->orderBy($sortBy, $order);
+
+            $users = $query->paginate($perPage);
+
+            return UserResource::collection($users)
+                ->additional([
+                    'status' => 200,
+                    'success' => true,
+                    'filters' => [
+                        'search' => $search,
+                        'sort_by' => $sortBy,
+                        'order' => $order,
+                    ],
+                    'meta' => [
+                        'total' => $users->total(),
+                        'per_page' => $users->perPage(),
+                        'current_page' => $users->currentPage(),
+                        'last_page' => $users->lastPage(),
+                    ]
+                ]);
+
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => 500,
+                'success' => false,
+                'message' => 'Erreur lors de la récupération des utilisateurs',
+                'error' => $th->getMessage()
+            ]);
+        }
+    }
     /**
      * @OA\Get(
      *     path="/api/users/{id}",
@@ -108,6 +162,26 @@ class UserController extends Controller
         $user->delete();
 
         return response()->json(['message' => 'Utilisateur supprimé']);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $user = User::find($id);
+
+        if (!$user) {
+            return response()->json(['message' => 'Utilisateur introuvable'], 404);
+        }
+
+        $user->update($request->all());
+
+        return response()->json($user);
+    }
+
+    public function store(Request $request)
+    {
+        $user = User::create($request->all());
+
+        return response()->json($user);
     }
 
     /**
@@ -293,33 +367,5 @@ class UserController extends Controller
     public function updateMe(Request $request)
     {
         return $this->updateProfile($request);
-    }
-
-    /**
-     * @OA\Get(
-     *     path="/api/loans",
-     *     operationId="getAllLoans",
-     *     tags={"Loans"},
-     *     summary="Lister tous les emprunts",
-     *     description="Récupère la liste de tous les emprunts",
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Response(
-     *         response=200,
-     *         description="Liste de tous les emprunts"
-     *     ),
-     *     @OA\Response(
-     *         response=401,
-     *         description="Non authentifié"
-     *     ),
-     *     @OA\Response(
-     *         response=403,
-     *         description="Accès refusé"
-     *     )
-     * )
-     */
-    public function get_all_loans(Request $request)
-    {
-        // TODO: Implémenter la logique
-        return response()->json([]);
     }
 }
