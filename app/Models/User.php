@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use App\Models\Loan;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
@@ -45,7 +46,6 @@ class User extends Authenticatable
      */
     const ROLE_ADMIN = 'admin';
     const ROLE_MANAGER = 'manager';
-    const ROLE_TEACHER = 'teacher';
     const ROLE_STUDENT_DELEGATE = 'student_delegate';
 
     /**
@@ -79,13 +79,13 @@ class User extends Authenticatable
         return $this->role === self::ROLE_MANAGER;
     }
 
-    public function isTeacher()
-    {
-        return $this->role === self::ROLE_TEACHER;
-    }
-
     public function isStudentDelegate()
     {
         return $this->role === self::ROLE_STUDENT_DELEGATE;
+    }
+
+    public function loans()
+    {
+        return $this->hasMany(Loan::class);
     }
 }

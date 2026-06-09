@@ -2,9 +2,11 @@
 
 use App\Http\Controllers\Api\ProjectorController;
 use App\Http\Controllers\Api\AccessoryController;
+use App\Http\Controllers\Api\LoanController;
 use App\Http\Controllers\Api\StatsController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\UserController;
 
 /*
@@ -20,7 +22,7 @@ Route::post('/register', [AuthController::class,'register']);
 | AUTH (protected)
 |--------------------------------------------------------------------------
 */
-//Utilisateur connecté : voir son profil, update son profil, delete son compte, logout
+//Utilisateur connecté : voir son profil, update son profil, delete son compte, logout ...
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
     Route::put('/me', [UserController::class, 'updateMe']);
@@ -29,6 +31,28 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/user/profile', [UserController::class, 'updateProfile']);
     Route::post('/user/image_profile', [UserController::class, 'updateImage']);
     Route::put('/user/password', [UserController::class, 'updatePassword']);
+
+    // projector
+    Route::get('/projectors', [ProjectorController::class, 'index']);
+    Route::get('/projectors/{id}', [ProjectorController::class, 'show']);
+
+    // accessories
+    Route::get('/accessories', [AccessoryController::class, 'index']);
+    Route::get('/accessories/{id}', [AccessoryController::class, 'show']);
+
+    // loans
+    Route::get('/loans/me', [LoanController::class, 'getUserLoans']);
+    Route::get('/loans/me/active', [LoanController::class, 'checkActiveLoan']);
+    Route::delete('/loans/{id}', [LoanController::class, 'destroy']);
+    Route::get('/loans', [LoanController::class, 'index']);
+    Route::get('/loans/{id}', [LoanController::class, 'show']);
+    Route::post('/loans', [LoanController::class, 'store']);
+    Route::put('/loans/{id}', [LoanController::class, 'update']);
+
+    // Notifications
+     Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+    Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead']);
 });
 
 // ADMIN + MANAGER uniquement
@@ -41,24 +65,16 @@ Route::middleware(['auth:sanctum', 'role:admin,manager'])->group(function () {
     // update
     Route::put('/users/{id}', [UserController::class, 'update']);
 
-    // emprunt
-    Route::get('/loans', [UserController::class, 'get_all_loans']);
-
     // projector
-    Route::get('/projectors', [ProjectorController::class, 'index']);
-    Route::get('/projectors/{id}', [ProjectorController::class, 'show']);
     Route::post('/projectors', [ProjectorController::class, 'store']);
     Route::put('/projectors/{id}', [ProjectorController::class, 'update']);
     Route::delete('/projectors/{id}', [ProjectorController::class, 'destroy']);
 
     // accessories
-    Route::get('/accessories', [AccessoryController::class, 'index']);
-    Route::get('/accessories/{id}', [AccessoryController::class, 'show']);
     Route::post('/accessories', [AccessoryController::class, 'store']);
     Route::put('/accessories/{id}', [AccessoryController::class, 'update']);
     Route::delete('/accessories/{id}', [AccessoryController::class, 'destroy']);
 
     // statistics
     Route::get('/stats', [StatsController::class, 'index']);
-
 });

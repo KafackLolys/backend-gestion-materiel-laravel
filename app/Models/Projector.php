@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Loan;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -17,6 +18,11 @@ class Projector extends Model
         'etat',
         'image',
     ];
+
+    public function loans()
+    {
+        return $this->hasMany(Loan::class);
+    }
 
     // Optionnel mais propre : constantes pour éviter les fautes
     const ETAT_DISPONIBLE = 'disponible';

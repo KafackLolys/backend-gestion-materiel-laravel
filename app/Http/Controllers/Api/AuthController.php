@@ -7,31 +7,12 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
-use OpenApi\Attributes as OA;
+use OpenApi\Attributes as OAAttributes;
+use OpenApi\Annotations as OA;
 
 class AuthController extends Controller
 {
-    #[OA\Post(
-        path: '/login',
-        operationId: 'loginUser',
-        summary: 'Connexion utilisateur',
-        description: 'Permet de connecter un utilisateur',
-        tags: ['Auth'],
-        requestBody: new OA\RequestBody(
-            required: true,
-            content: new OA\JsonContent(
-                required: ['email', 'password'],
-                properties: [
-                    new OA\Property(property: 'email', type: 'string', example: 'test@test.com'),
-                    new OA\Property(property: 'password', type: 'string', example: 'password')
-                ]
-            )
-        ),
-        responses: [
-            new OA\Response(response: 200, description: 'Connexion réussie'),
-            new OA\Response(response: 401, description: 'Identifiants invalides')
-        ]
-    )]
+
     public function login(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -76,24 +57,6 @@ class AuthController extends Controller
         ]);
     }
 
-    /**
-     * @OA\Get(
-     *     path="/api/me",
-     *     operationId="getMe",
-     *     tags={"Auth"},
-     *     summary="Récupérer le profil courant",
-     *     description="Retourne les informations de l'utilisateur connecté",
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Response(
-     *         response=200,
-     *         description="Profil de l'utilisateur"
-     *     ),
-     *     @OA\Response(
-     *         response=401,
-     *         description="Non authentifié"
-     *     )
-     * )
-     */
     public function me(Request $request)
     {
         return response()->json($request->user());

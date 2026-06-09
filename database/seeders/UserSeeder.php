@@ -29,14 +29,6 @@ class UserSeeder extends Seeder
             'role'       => User::ROLE_MANAGER,
         ]);
 
-        // TEACHER
-        User::create([
-            'first_name' => 'John',
-            'last_name'  => 'Teacher',
-            'email'      => 'teacher@test.com',
-            'password'   => 'password123',
-            'role'       => User::ROLE_TEACHER,
-        ]);
 
         // STUDENT DELEGATE
         User::create([

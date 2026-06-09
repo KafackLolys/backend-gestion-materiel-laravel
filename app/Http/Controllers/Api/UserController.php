@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use OpenApi\Annotations as OA;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -164,6 +165,32 @@ class UserController extends Controller
         return response()->json(['message' => 'Utilisateur supprimé']);
     }
 
+    /**
+     * @OA\Put(
+     *     path="/api/users/{id}",
+     *     operationId="updateUser",
+     *     tags={"Users"},
+     *     summary="Mettre à jour un utilisateur",
+     *     description="Met à jour les informations d'un utilisateur existant",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         @OA\JsonContent(
+     *             @OA\Property(property="first_name", type="string"),
+     *             @OA\Property(property="last_name", type="string"),
+     *             @OA\Property(property="email", type="string", format="email"),
+     *             @OA\Property(property="role", type="string")
+     *         )
+     *     ),
+     *     @OA\Response(response=200, description="Utilisateur mis à jour"),
+     *     @OA\Response(response=404, description="Utilisateur introuvable")
+     * )
+     */
     public function update(Request $request, $id)
     {
         $user = User::find($id);
@@ -177,6 +204,29 @@ class UserController extends Controller
         return response()->json($user);
     }
 
+    /**
+     * @OA\Post(
+     *     path="/api/users",
+     *     operationId="createUser",
+     *     tags={"Users"},
+     *     summary="Créer un utilisateur",
+     *     description="Crée un nouvel utilisateur dans le système",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"first_name", "last_name", "email", "password", "role"},
+     *             @OA\Property(property="first_name", type="string", example="Alice"),
+     *             @OA\Property(property="last_name", type="string", example="Dupont"),
+     *             @OA\Property(property="email", type="string", format="email", example="alice@example.com"),
+     *             @OA\Property(property="password", type="string", format="password", example="secret123"),
+     *             @OA\Property(property="role", type="string", example="manager")
+     *         )
+     *     ),
+     *     @OA\Response(response=201, description="Utilisateur créé"),
+     *     @OA\Response(response=422, description="Erreur de validation")
+     * )
+     */
     public function store(Request $request)
     {
         $user = User::create($request->all());

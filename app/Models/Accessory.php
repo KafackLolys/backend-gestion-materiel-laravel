@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Loan;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -23,5 +24,12 @@ class Accessory extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function loans()
+    {
+        return $this->belongsToMany(Loan::class, 'accessory_loan')
+            ->withPivot('quantity')
+            ->withTimestamps();
     }
 }

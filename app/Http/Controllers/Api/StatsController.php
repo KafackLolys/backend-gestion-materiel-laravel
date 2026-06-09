@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use OpenApi\Annotations as OA;
 use App\Models\Accessory;
 use App\Models\Projector;
 use App\Models\User;
@@ -11,6 +12,18 @@ use Illuminate\Support\Facades\DB;
 
 class StatsController extends Controller
 {
+    /**
+     * @OA\Get(
+     *     path="/api/stats",
+     *     operationId="getStats",
+     *     tags={"Stats"},
+     *     summary="Récupérer les statistiques globales",
+     *     description="Retourne des métriques sur les utilisateurs, projecteurs, accessoires et emprunts",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Response(response=200, description="Statistiques récupérées avec succès"),
+     *     @OA\Response(response=500, description="Erreur serveur")
+     * )
+     */
     public function index(Request $request)
     {
         try {

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use OpenApi\Annotations as OA;
 use App\Models\Accessory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -12,6 +13,23 @@ use Illuminate\Validation\ValidationException;
 
 class AccessoryController extends Controller
 {
+    /**
+     * @OA\Get(
+     *     path="/api/accessories",
+     *     operationId="getAccessories",
+     *     tags={"Accessories"},
+     *     summary="Lister les accessoires",
+     *     description="Récupère une liste paginée des accessoires",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(name="page", in="query", @OA\Schema(type="integer"), description="Numéro de page"),
+     *     @OA\Parameter(name="per_page", in="query", @OA\Schema(type="integer"), description="Nombre d'éléments par page"),
+     *     @OA\Parameter(name="search", in="query", @OA\Schema(type="string"), description="Recherche par nom ou description"),
+     *     @OA\Parameter(name="sort_by", in="query", @OA\Schema(type="string"), description="Tri par champ"),
+     *     @OA\Parameter(name="order", in="query", @OA\Schema(type="string", enum={"asc","desc"}), description="Ordre de tri"),
+     *     @OA\Response(response=200, description="Liste des accessoires retournée"),
+     *     @OA\Response(response=500, description="Erreur serveur")
+     * )
+     */
     public function index(Request $request)
     {
         try {
@@ -67,14 +85,50 @@ class AccessoryController extends Controller
         }
     }
 
-    // Afficher un accessoire
+    /**
+     * @OA\Get(
+     *     path="/api/accessories/{id}",
+     *     operationId="getAccessoryById",
+     *     tags={"Accessories"},
+     *     summary="Détails d'un accessoire",
+     *     description="Affiche un accessoire spécifique avec ses informations",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\Response(response=200, description="Accessoire trouvé"),
+     *     @OA\Response(response=404, description="Accessoire introuvable")
+     * )
+     */
     public function show($id)
     {
         $accessory = Accessory::with('user')->findOrFail($id);
         return response()->json($accessory);
     }
 
-    // Créer un accessoire
+    /**
+     * @OA\Post(
+     *     path="/api/accessories",
+     *     operationId="createAccessory",
+     *     tags={"Accessories"},
+     *     summary="Créer un accessoire",
+     *     description="Ajoute un nouvel accessoire à l'inventaire",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\MediaType(
+     *             mediaType="multipart/form-data",
+     *             @OA\Schema(
+     *                 required={"name", "quantity"},
+     *                 @OA\Property(property="name", type="string"),
+     *                 @OA\Property(property="quantity", type="integer"),
+     *                 @OA\Property(property="description", type="string"),
+     *                 @OA\Property(property="image", type="string", format="binary")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(response=201, description="Accessoire créé"),
+     *     @OA\Response(response=422, description="Erreur de validation")
+     * )
+     */
     public function store(Request $request)
     {
         try {
@@ -121,6 +175,30 @@ class AccessoryController extends Controller
         }
     }
 
+    /**
+     * @OA\Put(
+     *     path="/api/accessories/{id}",
+     *     operationId="updateAccessory",
+     *     tags={"Accessories"},
+     *     summary="Mettre à jour un accessoire",
+     *     description="Modifie les données d'un accessoire existant",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\RequestBody(
+     *         @OA\MediaType(
+     *             mediaType="multipart/form-data",
+     *             @OA\Schema(
+     *                 @OA\Property(property="name", type="string"),
+     *                 @OA\Property(property="quantity", type="integer"),
+     *                 @OA\Property(property="description", type="string"),
+     *                 @OA\Property(property="image", type="string", format="binary")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(response=200, description="Accessoire mis à jour"),
+     *     @OA\Response(response=404, description="Accessoire introuvable")
+     * )
+     */
     public function update(Request $request, $id)
     {
         $accessory = Accessory::findOrFail($id);
@@ -153,6 +231,19 @@ class AccessoryController extends Controller
         ]);
     }
 
+    /**
+     * @OA\Delete(
+     *     path="/api/accessories/{id}",
+     *     operationId="deleteAccessory",
+     *     tags={"Accessories"},
+     *     summary="Supprimer un accessoire",
+     *     description="Supprime un accessoire de l'inventaire",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\Response(response=200, description="Accessoire supprimé"),
+     *     @OA\Response(response=404, description="Accessoire introuvable")
+     * )
+     */
     // Supprimer un accessoire
     public function destroy($id)
     {
