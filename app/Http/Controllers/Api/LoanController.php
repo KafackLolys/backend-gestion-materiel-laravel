@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Accessory;
+use App\Models\ActivityLog;
 use App\Models\Loan;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -157,6 +158,10 @@ class LoanController extends Controller
         } catch (ValidationException $e) {
             return response()->json(['errors' => $e->errors()], 422);
         } catch (\Throwable $th) {
+            ActivityLog::create([
+                'title' => 'Erreur lors de la création d\'un emprunt',
+                'description' => $th->getMessage(),
+            ]);
             Log::error('Erreur création emprunt', ['error' => $th->getMessage(), 'trace' => $th->getTraceAsString()]);
             return response()->json(['error' => 'Impossible de créer l\'emprunt'], 500);
         }

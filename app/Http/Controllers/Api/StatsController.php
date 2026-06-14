@@ -3,8 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use OpenApi\Annotations as OA;
 use App\Models\Accessory;
+use App\Models\ActivityLog;
+use OpenApi\Annotations as OA;
 use App\Models\Projector;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -85,6 +86,10 @@ class StatsController extends Controller
                 ],
             ]);
         } catch (\Throwable $th) {
+            ActivityLog::create([
+                'title' => 'Erreur lors de la récupération des statistiques',
+                'description' => $th->getMessage(),
+            ]);
             return response()->json([
                 'status' => 500,
                 'success' => false,

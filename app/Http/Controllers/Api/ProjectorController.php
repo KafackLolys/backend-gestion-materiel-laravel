@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use OpenApi\Annotations as OA;
 use App\Models\Projector;
 use Illuminate\Http\Request;
@@ -77,6 +78,10 @@ class ProjectorController extends Controller
                 'success' => true,
             ]);
         } catch (\Throwable $th) {
+            ActivityLog::create([
+                'title' => 'Erreur lors de la récupération des projecteurs',
+                'description' => $th->getMessage(),
+            ]);
             return response()->json([
                 'status' => 500,
                 'success' => false,
@@ -173,6 +178,10 @@ class ProjectorController extends Controller
             Log::error('Erreur validation', $e->errors());
             return response()->json(['errors' => $e->errors()], 422);
         } catch (\Exception $e) {
+            ActivityLog::create([
+                'title' => 'Erreur lors de la création d\'un projecteur',
+                'description' => $e->getMessage(),
+            ]);
             Log::error('Erreur générale : ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
             return response()->json(['error' => $e->getMessage()], 500);
         }
@@ -204,34 +213,47 @@ class ProjectorController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $projecteur = Projector::findOrFail($id);
+        try {
+            $projecteur = Projector::findOrFail($id);
 
-        $validated = $request->validate([
-            'marque' => 'sometimes|string|max:255',
-            'description' => 'nullable|string',
-            'etat' => ['sometimes', Rule::in(['disponible', 'emprunte', 'en_maintenance', 'hors_service'])],
-            'image' => 'nullable|image|max:2048',
-        ]);
+            $validated = $request->validate([
+                'marque' => 'sometimes|string|max:255',
+                'description' => 'nullable|string',
+                'etat' => ['sometimes', Rule::in(['disponible', 'emprunte', 'en_maintenance', 'hors_service'])],
+                'image' => 'nullable|image|max:2048',
+            ]);
 
-        $data = array_filter($validated, fn($value) => !is_null($value));
+            $data = array_filter($validated, fn($value) => !is_null($value));
 
-        if ($request->hasFile('image')) {
-            // Supprimer l'ancienne image si elle existe
-            if ($projecteur->image) {
-                $oldPath = str_replace('/storage/', '', $projecteur->image);
-                Storage::disk('public')->delete($oldPath);
+            if ($request->hasFile('image')) {
+                if ($projecteur->image) {
+                    $oldPath = str_replace('/storage/', '', $projecteur->image);
+                    Storage::disk('public')->delete($oldPath);
+                }
+                $path = $request->file('image')->store('projecteurs', 'public');
+                $data['image'] = Storage::url($path);
             }
-            $path = $request->file('image')->store('projecteurs', 'public');
-            $data['image'] = Storage::url($path);
+
+            $projecteur->update($data);
+
+            return response()->json([
+                'data' => $projecteur,
+                'message' => 'Projecteur mis à jour',
+                'success' => true,
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            ActivityLog::create([
+                'title' => 'Erreur lors de la mise à jour d\'un projecteur',
+                'description' => $e->getMessage(),
+            ]);
+            return response()->json(['error' => 'Projecteur non trouvé'], 404);
+        } catch (\Exception $e) {
+            ActivityLog::create([
+                'title' => 'Erreur lors de la mise à jour d\'un projecteur',
+                'description' => $e->getMessage(),
+            ]);
+            return response()->json(['error' => $e->getMessage()], 500);
         }
-
-        $projecteur->update($data);
-
-        return response()->json([
-            'data' => $projecteur,
-            'message' => 'Projecteur mis à jour',
-            'success' => true,
-        ]);
     }
 
     /**
@@ -250,13 +272,27 @@ class ProjectorController extends Controller
     // Supprimer un projecteur
     public function destroy($id)
     {
-        $projecteur = Projector::findOrFail($id);
-        $projecteur->delete();
+        try {
+            $projecteur = Projector::findOrFail($id);
+            $projecteur->delete();
 
-        return response()->json([
-            'message' => 'Projecteur supprimé',
-            'success' => true,
-        ]);
+            return response()->json([
+                'message' => 'Projecteur supprimé',
+                'success' => true,
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            ActivityLog::create([
+                'title' => 'Erreur lors de la suppression d\'un projecteur',
+                'description' => $e->getMessage(),
+            ]);
+            return response()->json(['error' => 'Projecteur non trouvé'], 404);
+        } catch (\Exception $e) {
+            ActivityLog::create([
+                'title' => 'Erreur lors de la suppression d\'un projecteur',
+                'description' => $e->getMessage(),
+            ]);
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 }
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use OpenApi\Annotations as OA;
 use App\Models\Accessory;
 use Illuminate\Http\Request;
@@ -76,6 +77,10 @@ class AccessoryController extends Controller
                 'success' => true,
             ]);
         } catch (\Throwable $th) {
+            ActivityLog::create([
+                'title' => 'Erreur lors de la récupération des accessoires',
+                'description' => $th->getMessage(),
+            ]);
             return response()->json([
                 'status' => 500,
                 'success' => false,
@@ -100,8 +105,16 @@ class AccessoryController extends Controller
      */
     public function show($id)
     {
-        $accessory = Accessory::with('user')->findOrFail($id);
-        return response()->json($accessory);
+        try {
+            $accessory = Accessory::with('user')->findOrFail($id);
+            return response()->json($accessory);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            ActivityLog::create([
+                'title' => 'Accessoire non trouvé',
+                'description' => $e->getMessage(),
+            ]);
+            return response()->json(['error' => 'Accessoire non trouvé'], 404);
+        }
     }
 
     /**
@@ -170,6 +183,10 @@ class AccessoryController extends Controller
             Log::error('Erreur validation', $e->errors());
             return response()->json(['errors' => $e->errors()], 422);
         } catch (\Exception $e) {
+            ActivityLog::create([
+                'title' => 'Erreur lors de la création d\'un accessoire',
+                'description' => $e->getMessage(),
+            ]);
             Log::error('Erreur générale : ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
             return response()->json(['error' => $e->getMessage()], 500);
         }
@@ -201,34 +218,43 @@ class AccessoryController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $accessory = Accessory::findOrFail($id);
+        try {
+            $accessory = Accessory::findOrFail($id);
 
-        $validated = $request->validate([
-            'name' => 'sometimes|string|max:255',
-            'quantity' => 'sometimes|integer|min:1',
-            'description' => 'nullable|string',
-            'image' => 'nullable|image|max:2048',
-        ]);
+            $validated = $request->validate([
+                'name' => 'sometimes|string|max:255',
+                'quantity' => 'sometimes|integer|min:1',
+                'description' => 'nullable|string',
+                'image' => 'nullable|image|max:2048',
+            ]);
 
-        $data = array_filter($validated, fn($value) => !is_null($value));
+            $data = array_filter($validated, fn($value) => !is_null($value));
 
-        if ($request->hasFile('image')) {
-            // Supprimer l'ancienne image si elle existe
-            if ($accessory->image) {
-                $oldPath = str_replace('/storage/', '', $accessory->image);
-                Storage::disk('public')->delete($oldPath);
+            if ($request->hasFile('image')) {
+                // Supprimer l'ancienne image si elle existe
+                if ($accessory->image) {
+                    $oldPath = str_replace('/storage/', '', $accessory->image);
+                    Storage::disk('public')->delete($oldPath);
+                }
+                $path = $request->file('image')->store('accessories', 'public');
+                $data['image'] = Storage::url($path);
             }
-            $path = $request->file('image')->store('accessories', 'public');
-            $data['image'] = Storage::url($path);
+
+            $accessory->update($data);
+
+            return response()->json([
+                'data' => $accessory,
+                'message' => 'Accessoire mis à jour',
+                'success' => true,
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            ActivityLog::create([
+                'title' => 'Erreur lors de la mise à jour d\'un accessoire',
+                'description' => $e->getMessage(),
+            ]);
+            return response()->json(['error' => 'Accessoire non trouvé'], 404);
         }
 
-        $accessory->update($data);
-
-        return response()->json([
-            'data' => $accessory,
-            'message' => 'Accessoire mis à jour',
-            'success' => true,
-        ]);
     }
 
     /**
@@ -247,12 +273,20 @@ class AccessoryController extends Controller
     // Supprimer un accessoire
     public function destroy($id)
     {
-        $accessory = Accessory::findOrFail($id);
-        $accessory->delete();
+        try {
+            $accessory = Accessory::findOrFail($id);
+            $accessory->delete();
 
-        return response()->json([
-            'message' => 'Accessoire supprimé',
-            'success' => true,
-        ]);
+            return response()->json([
+                'message' => 'Accessoire supprimé',
+                'success' => true,
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            ActivityLog::create([
+                'title' => 'Erreur lors de la suppression d\'un accessoire',
+                'description' => $e->getMessage(),
+            ]);
+            return response()->json(['error' => 'Accessoire non trouvé'], 404);
+        }
     }
 }

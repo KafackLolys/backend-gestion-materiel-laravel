@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use OpenApi\Annotations as OA;
 use App\Http\Resources\UserResource;
 use App\Models\User;
@@ -85,6 +86,10 @@ class UserController extends Controller
                 ]);
 
         } catch (\Throwable $th) {
+            ActivityLog::create([
+                'title' => 'Erreur lors de la récupération des utilisateurs',
+                'description' => $th->getMessage(),
+            ]);
             return response()->json([
                 'status' => 500,
                 'success' => false,
@@ -119,13 +124,16 @@ class UserController extends Controller
      */
     public function show($id)
     {
-        $user = User::find($id);
-
-        if (!$user) {
+        try {
+            $user = User::findOrFail($id);
+            return response()->json($user);
+        } catch (\Throwable $th) {
+            ActivityLog::create([
+                'title' => 'Erreur lors de la récupération d\'un utilisateur',
+                'description' => $th->getMessage(),
+            ]);
             return response()->json(['message' => 'Utilisateur introuvable'], 404);
         }
-
-        return response()->json($user);
     }
 
     /**
@@ -154,15 +162,18 @@ class UserController extends Controller
      */
     public function destroy($id)
     {
-        $user = User::find($id);
+        try {
+            $user = User::findOrFail($id);
+            $user->delete();
 
-        if (!$user) {
+            return response()->json(['message' => 'Utilisateur supprimé']);
+        } catch (\Throwable $th) {
+            ActivityLog::create([
+                'title' => 'Erreur lors de la suppression d\'un utilisateur',
+                'description' => $th->getMessage(),
+            ]);
             return response()->json(['message' => 'Utilisateur introuvable'], 404);
         }
-
-        $user->delete();
-
-        return response()->json(['message' => 'Utilisateur supprimé']);
     }
 
     /**
@@ -193,15 +204,18 @@ class UserController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $user = User::find($id);
+        try {
+            $user = User::findOrFail($id);
+            $user->update($request->all());
 
-        if (!$user) {
+            return response()->json($user);
+        } catch (\Throwable $th) {
+            ActivityLog::create([
+                'title' => 'Erreur lors de la mise à jour d\'un utilisateur',
+                'description' => $th->getMessage(),
+            ]);
             return response()->json(['message' => 'Utilisateur introuvable'], 404);
         }
-
-        $user->update($request->all());
-
-        return response()->json($user);
     }
 
     /**
@@ -229,9 +243,17 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
-        $user = User::create($request->all());
+        try {
+            $user = User::create($request->all());
 
-        return response()->json($user);
+            return response()->json($user);
+        } catch (\Throwable $th) {
+            ActivityLog::create([
+                'title' => 'Erreur lors de la création d\'un utilisateur',
+                'description' => $th->getMessage(),
+            ]);
+            return response()->json(['message' => 'Impossible de créer l\'utilisateur'], 500);
+        }
     }
 
     /**
@@ -258,14 +280,22 @@ class UserController extends Controller
      */
     public function updateProfile(Request $request)
     {
-        $user = $request->user();
-        $data = $request->validate([
-            'first_name' => 'required|string',
-            'last_name' => 'required|string',
-            'email' => 'required|email|unique:users,email,' . $user->id,
-        ]);
-        $user->update($data);
-        return response()->json($user);
+        try {
+            $user = $request->user();
+            $data = $request->validate([
+                'first_name' => 'required|string',
+                'last_name' => 'required|string',
+                'email' => 'required|email|unique:users,email,' . $user->id,
+            ]);
+            $user->update($data);
+            return response()->json($user);
+        } catch (\Throwable $th) {
+            ActivityLog::create([
+                'title' => 'Erreur lors de la mise à jour du profil',
+                'description' => $th->getMessage(),
+            ]);
+            return response()->json(['message' => 'Impossible de mettre à jour le profil'], 500);
+        }
     }
 
 
@@ -298,12 +328,20 @@ class UserController extends Controller
      */
     public function updatePassword(Request $request)
     {
-        $request->validate([
-            'current_password' => 'required|current_password',
-            'new_password' => 'required|min:8|confirmed',
-        ]);
-        $request->user()->update(['password' => Hash::make($request->new_password)]);
-        return response()->json(['message' => 'Le mot de passe a été mis à jour']);
+        try {
+            $request->validate([
+                'current_password' => 'required|current_password',
+                'new_password' => 'required|min:8|confirmed',
+            ]);
+            $request->user()->update(['password' => Hash::make($request->new_password)]);
+            return response()->json(['message' => 'Le mot de passe a été mis à jour']);
+        } catch (\Throwable $th) {
+            ActivityLog::create([
+                'title' => 'Erreur lors de la mise à jour du mot de passe',
+                'description' => $th->getMessage(),
+            ]);
+            return response()->json(['message' => 'Impossible de mettre à jour le mot de passe'], 500);
+        }
     }
 
 
@@ -323,14 +361,22 @@ class UserController extends Controller
      */
     public function deleteMe(Request $request)
     {
-        $user = $request->user();
+        try {
+            $user = $request->user();
 
-        $user->tokens()->delete();
-        $user->delete();
+            $user->tokens()->delete();
+            $user->delete();
 
-        return response()->json([
-            'message' => 'Compte supprimé avec succès'
-        ]);
+            return response()->json([
+                'message' => 'Compte supprimé avec succès'
+            ]);
+        } catch (\Throwable $th) {
+            ActivityLog::create([
+                'title' => 'Erreur lors de la suppression du compte',
+                'description' => $th->getMessage(),
+            ]);
+            return response()->json(['message' => 'Impossible de supprimer le compte'], 500);
+        }
     }
 
     /**
@@ -368,29 +414,34 @@ class UserController extends Controller
      */
     public function updateImage(Request $request)
     {
-        $request->validate([
-            'image_profil' => 'required|image|max:2048',
-        ]);
+        try {
+            $request->validate([
+                'image_profil' => 'required|image|max:2048',
+            ]);
 
-        $user = $request->user();
+            $user = $request->user();
 
-        // Supprimer l'ancienne image si elle existe
-        if ($user->image_profil) {
-            // Enlever le préfixe "/storage/" si présent
-            $oldPath = str_replace('/storage/', '', $user->image_profil);
-            Storage::disk('public')->delete($oldPath);
+            if ($user->image_profil) {
+                $oldPath = str_replace('/storage/', '', $user->image_profil);
+                Storage::disk('public')->delete($oldPath);
+            }
+
+            $path = $request->file('image_profil')->store('image_profil', 'public');
+
+            $user->update([
+                'image_profil' => Storage::url($path),
+            ]);
+
+            return response()->json([
+                'image_profil' => $user->image_profil,
+            ]);
+        } catch (\Throwable $th) {
+            ActivityLog::create([
+                'title' => 'Erreur lors de la mise à jour de l\'image de profil',
+                'description' => $th->getMessage(),
+            ]);
+            return response()->json(['message' => 'Impossible de mettre à jour l\'image de profil'], 500);
         }
-
-
-        $path = $request->file('image_profil')->store('image_profil', 'public');
-
-        $user->update([
-            'image_profil' => Storage::url($path),
-        ]);
-
-        return response()->json([
-            'image_profil' => $user->image_profil,
-        ]);
     }
 
     /**

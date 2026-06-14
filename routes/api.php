@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\ProjectorController;
 use App\Http\Controllers\Api\AccessoryController;
+use App\Http\Controllers\Api\ActivityLogController;
 use App\Http\Controllers\Api\LoanController;
 use App\Http\Controllers\Api\StatsController;
 use Illuminate\Support\Facades\Route;
@@ -16,6 +17,15 @@ use App\Http\Controllers\Api\UserController;
 */
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class,'register']);
+
+/*
+|--------------------------------------------------------------------------
+| PASSWORD RESET (public)
+|--------------------------------------------------------------------------
+*/
+Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+Route::post('/verify-reset-code', [AuthController::class, 'verifyResetCode']);
+Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
 /*
 |--------------------------------------------------------------------------
@@ -77,4 +87,7 @@ Route::middleware(['auth:sanctum', 'role:admin,manager'])->group(function () {
 
     // statistics
     Route::get('/stats', [StatsController::class, 'index']);
+
+    // activity logs
+    Route::get('/activity-logs', [ActivityLogController::class, 'index']);
 });
