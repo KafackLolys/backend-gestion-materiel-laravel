@@ -6,10 +6,12 @@ namespace App\Services;
 use App\Models\Loan;
 use App\Models\User;
 use App\Events\LoanApprovedEvent;
+use App\Events\LoanRejectedEvent;
 use App\Events\LoanReturnedEvent;
 use App\Events\NewLoanRequestEvent;
 use App\Notifications\LoanApprovedNotification;
 use App\Notifications\LoanReturnedNotification;
+use App\Notifications\LoanRejectedNotification;
 use App\Notifications\NewLoanRequestNotification;
 use Illuminate\Support\Facades\Log;
 
@@ -45,6 +47,23 @@ class NotificationService
 
         try {
             broadcast(new LoanApprovedEvent($loan));
+        } catch (\Exception $e) {
+            Log::warning('WebSocket broadcast failed: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Notifier l'emprunteur que sa demande a été rejetée
+     */
+    public static function loanRejected(Loan $loan): void
+    {
+        $borrower = $loan->user;
+        if ($borrower) {
+            $borrower->notify(new LoanRejectedNotification($loan));
+        }
+
+        try {
+            broadcast(new LoanRejectedEvent($loan));
         } catch (\Exception $e) {
             Log::warning('WebSocket broadcast failed: ' . $e->getMessage());
         }

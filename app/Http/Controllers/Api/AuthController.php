@@ -37,9 +37,15 @@ class AuthController extends Controller
 
             $user = User::where('email', $request->email)->first();
 
-            if (!$user || !Hash::check($request->password, $user->password)) {
+            if (!$user) {
                 return response()->json([
-                    'message' => 'Identifiants invalides'
+                    'message' => 'Aucun compte trouvé avec cet email'
+                ], 401);
+            }
+
+            if (!Hash::check($request->password, $user->password)) {
+                return response()->json([
+                    'message' => 'Mot de passe incorrect'
                 ], 401);
             }
 
@@ -126,43 +132,14 @@ class AuthController extends Controller
         }
     }
 
-    /**
-     * @OA\Post(
-     *     path="/api/register",
-     *     operationId="registerUser",
-     *     tags={"Auth"},
-     *     summary="Inscription d'un nouvel utilisateur",
-     *     description="Crée un nouveau compte utilisateur et retourne un token d'accès",
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(
-     *             required={"first_name", "last_name", "email", "password", "role"},
-     *             @OA\Property(property="first_name", type="string", example="John"),
-     *             @OA\Property(property="last_name", type="string", example="Doe"),
-     *             @OA\Property(property="email", type="string", format="email", example="john@example.com"),
-     *             @OA\Property(property="password", type="string", format="password", example="secret123"),
-     *             @OA\Property(property="role", type="string", example="student_delegate")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Utilisateur créé avec succès"
-     *     ),
-     *     @OA\Response(
-     *         response=422,
-     *         description="Erreur de validation"
-     *     )
-     * )
-     */
     public function forgotPassword(Request $request)
     {
         try {
             $validator = Validator::make($request->all(), [
-                'email' => 'required|email|exists:users,email',
+                'email' => 'required|email',
             ], [
                 'email.required' => "L'email est obligatoire",
                 'email.email' => "Format d'email invalide",
-                'email.exists' => "Aucun compte trouvé avec cet email",
             ]);
 
             if ($validator->fails()) {
@@ -173,6 +150,12 @@ class AuthController extends Controller
             }
 
             $user = User::where('email', $request->email)->first();
+
+            if (!$user) {
+                return response()->json([
+                    'message' => 'Aucun compte trouvé avec cet email'
+                ], 404);
+            }
 
             // Générer un code à 6 chiffres
             $code = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
@@ -203,12 +186,11 @@ class AuthController extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                'email' => 'required|email|exists:users,email',
+                'email' => 'required|email',
                 'code' => 'required|string|size:6',
             ], [
                 'email.required' => "L'email est obligatoire",
                 'email.email' => "Format d'email invalide",
-                'email.exists' => "Aucun compte trouvé avec cet email",
                 'code.required' => "Le code de vérification est obligatoire",
                 'code.size' => "Le code doit contenir 6 caractères",
             ]);
@@ -221,6 +203,12 @@ class AuthController extends Controller
             }
 
             $user = User::where('email', $request->email)->first();
+
+            if (!$user) {
+                return response()->json([
+                    'message' => 'Aucun compte trouvé avec cet email'
+                ], 404);
+            }
 
             if (!$user->reset_code || $user->reset_code !== $request->code) {
                 return response()->json([
@@ -254,14 +242,13 @@ class AuthController extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                'email' => 'required|email|exists:users,email',
+                'email' => 'required|email',
                 'code' => 'required|string|size:6',
                 'password' => 'required|string|min:6',
                 'password_confirmation' => 'required|string|same:password',
             ], [
                 'email.required' => "L'email est obligatoire",
                 'email.email' => "Format d'email invalide",
-                'email.exists' => "Aucun compte trouvé avec cet email",
                 'code.required' => "Le code de vérification est obligatoire",
                 'code.size' => "Le code doit contenir 6 caractères",
                 'password.required' => "Le mot de passe est obligatoire",
@@ -278,6 +265,12 @@ class AuthController extends Controller
             }
 
             $user = User::where('email', $request->email)->first();
+
+            if (!$user) {
+                return response()->json([
+                    'message' => 'Aucun compte trouvé avec cet email'
+                ], 404);
+            }
 
             if (!$user->reset_code || $user->reset_code !== $request->code) {
                 return response()->json([

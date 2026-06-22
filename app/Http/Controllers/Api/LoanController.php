@@ -130,7 +130,7 @@ class LoanController extends Controller
                 'user_id' => Auth::id(),
                 'projector_id' => $validated['projector_id'] ?? null,
                 'loan_date' => $validated['loan_date'],
-                'return_date' => $validated['return_date'] ?? null,
+                'return_date' => null,
                 'classroom' => $validated['classroom'] ?? null,
                 'room' => $validated['room'] ?? null,
                 'cni_number' => $validated['cni_number'],
@@ -194,15 +194,20 @@ class LoanController extends Controller
         $nowInProgress = isset($validated['status']) && $validated['status'] === 'in_progress';
         $shouldNotifyApproval = $wasPending && $nowInProgress;
 
-        // Vérifier si c'est un retour complet (is_completed = true)
+        // Vérifier si c'est un retour complet (is_completed = true ou status = completed)
         $wasNotCompleted = $loan->status !== 'completed';
-        $isNowCompleted = isset($validated['is_completed']) && $validated['is_completed'] === true;
+        $isNowCompleted = (isset($validated['is_completed']) && $validated['is_completed'] === true);
         $shouldNotifyReturn = $wasNotCompleted && $isNowCompleted;
 
+        $update_return_date = false;
+        if((isset($validated['status']) && $validated['status'] === 'completed')){
+            $get_return_date = now();
+            $update_return_date = true;
+        }
         $loan->update(array_filter([
             'projector_id' => $validated['projector_id'] ?? null,
             'loan_date' => $validated['loan_date'] ?? null,
-            'return_date' => $validated['return_date'] ?? null,
+            'return_date' => $update_return_date ? $get_return_date : $validated['return_date'] ?? null,
             'classroom' => $validated['classroom'] ?? null,
             'room' => $validated['room'] ?? null,
             'cni_number' => $validated['cni_number'] ?? null,
@@ -221,6 +226,11 @@ class LoanController extends Controller
 
         // ✅ Notification d'approbation à l'emprunteur
         if ($shouldNotifyApproval) {
+            // Mettre à jour l'état du projecteur
+            if ($loan->projector) {
+                $loan->projector->update(['etat' => 'emprunte']);
+            }
+
             NotificationService::loanApproved($loan);
         }
 
@@ -279,6 +289,44 @@ class LoanController extends Controller
         }
 
         return true;
+    }
+
+    public function reject($id)
+    {
+        try {
+            $loan = Loan::findOrFail($id);
+
+            // Seuls les admin/manager peuvent rejeter une demande
+            $user = Auth::user();
+            if (!in_array($user->role, ['admin', 'manager'])) {
+                return response()->json(['error' => 'Action non autorisée'], 403);
+            }
+
+            // Vérifier que la demande est en statut "pending"
+            $loan = Loan::findOrFail($id);
+            $this->authorizeLoanAccess($loan);
+
+            $loan->accessories()->detach();
+            $loan->delete();
+
+            // Notifier l'emprunteur du rejet
+            NotificationService::loanRejected($loan);
+
+            return response()->json([
+                'message' => 'Demande d\'emprunt rejetée avec succès.',
+                'success' => true,
+            ]);
+        } catch (\Throwable $th) {
+            Log::error('Erreur rejeter demande emprunt', [
+                'error' => $th->getMessage(),
+                'trace' => $th->getTraceAsString()
+            ]);
+            return response()->json([
+                'success' => false,
+                'error' => 'Impossible de rejeter la demande d\'emprunt'
+            ], 500);
+        }
+
     }
 
     /**

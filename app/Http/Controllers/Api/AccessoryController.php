@@ -14,23 +14,6 @@ use Illuminate\Validation\ValidationException;
 
 class AccessoryController extends Controller
 {
-    /**
-     * @OA\Get(
-     *     path="/api/accessories",
-     *     operationId="getAccessories",
-     *     tags={"Accessories"},
-     *     summary="Lister les accessoires",
-     *     description="Récupère une liste paginée des accessoires",
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Parameter(name="page", in="query", @OA\Schema(type="integer"), description="Numéro de page"),
-     *     @OA\Parameter(name="per_page", in="query", @OA\Schema(type="integer"), description="Nombre d'éléments par page"),
-     *     @OA\Parameter(name="search", in="query", @OA\Schema(type="string"), description="Recherche par nom ou description"),
-     *     @OA\Parameter(name="sort_by", in="query", @OA\Schema(type="string"), description="Tri par champ"),
-     *     @OA\Parameter(name="order", in="query", @OA\Schema(type="string", enum={"asc","desc"}), description="Ordre de tri"),
-     *     @OA\Response(response=200, description="Liste des accessoires retournée"),
-     *     @OA\Response(response=500, description="Erreur serveur")
-     * )
-     */
     public function index(Request $request)
     {
         try {
@@ -89,20 +72,6 @@ class AccessoryController extends Controller
             ]);
         }
     }
-
-    /**
-     * @OA\Get(
-     *     path="/api/accessories/{id}",
-     *     operationId="getAccessoryById",
-     *     tags={"Accessories"},
-     *     summary="Détails d'un accessoire",
-     *     description="Affiche un accessoire spécifique avec ses informations",
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
-     *     @OA\Response(response=200, description="Accessoire trouvé"),
-     *     @OA\Response(response=404, description="Accessoire introuvable")
-     * )
-     */
     public function show($id)
     {
         try {

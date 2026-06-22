@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\ProjectorController;
 use App\Http\Controllers\Api\AccessoryController;
 use App\Http\Controllers\Api\ActivityLogController;
+use App\Http\Controllers\Api\IncidentController;
 use App\Http\Controllers\Api\LoanController;
 use App\Http\Controllers\Api\StatsController;
 use Illuminate\Support\Facades\Route;
@@ -16,7 +17,7 @@ use App\Http\Controllers\Api\UserController;
 |--------------------------------------------------------------------------
 */
 Route::post('/login', [AuthController::class, 'login']);
-Route::post('/register', [AuthController::class,'register']);
+Route::post('/register', [AuthController::class, 'register']);
 
 /*
 |--------------------------------------------------------------------------
@@ -60,7 +61,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/loans/{id}', [LoanController::class, 'update']);
 
     // Notifications
-     Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::get('/notifications', [NotificationController::class, 'index']);
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
     Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead']);
 });
@@ -90,4 +91,14 @@ Route::middleware(['auth:sanctum', 'role:admin,manager'])->group(function () {
 
     // activity logs
     Route::get('/activity-logs', [ActivityLogController::class, 'index']);
+
+    // loan reject (admin/manager)
+    Route::delete('/loans/{id}/reject', [LoanController::class, 'reject']);
+
+    // incidents
+    Route::get('/incidents', [IncidentController::class, 'index']);
+    Route::get('/incidents/{id}', [IncidentController::class, 'show']);
+    Route::post('/incidents', [IncidentController::class, 'store']);
+    Route::put('/incidents/{id}', [IncidentController::class, 'update']);
+    Route::delete('/incidents/{id}', [IncidentController::class, 'destroy']);
 });

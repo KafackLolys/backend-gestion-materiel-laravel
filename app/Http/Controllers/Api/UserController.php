@@ -13,28 +13,6 @@ use Illuminate\Support\Facades\Storage;
 
 class UserController extends Controller
 {
-    /**
-     * @OA\Get(
-     *     path="/api/users",
-     *     operationId="getUsers",
-     *     tags={"Users"},
-     *     summary="Lister les utilisateurs",
-     *     description="Récupère la liste de tous les utilisateurs",
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Response(
-     *         response=200,
-     *         description="Liste des utilisateurs"
-     *     ),
-     *     @OA\Response(
-     *         response=401,
-     *         description="Non authentifié"
-     *     ),
-     *     @OA\Response(
-     *         response=403,
-     *         description="Accès refusé"
-     *     )
-     * )
-     */
     public function index(Request $request)
     {
         $validated = $request->validate([
@@ -98,30 +76,7 @@ class UserController extends Controller
             ]);
         }
     }
-    /**
-     * @OA\Get(
-     *     path="/api/users/{id}",
-     *     operationId="getUserById",
-     *     tags={"Users"},
-     *     summary="Détails d'un utilisateur",
-     *     description="Affiche les détails d'un utilisateur spécifique",
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Parameter(
-     *         name="id",
-     *         in="path",
-     *         required=true,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Détails de l'utilisateur"
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Utilisateur introuvable"
-     *     )
-     * )
-     */
+    
     public function show($id)
     {
         try {
