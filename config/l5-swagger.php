@@ -12,7 +12,7 @@ return [
                 /*
                  * Route for accessing api documentation interface
                  */
-                'api' => 'api/documentation',
+                'api' => env('VERCEL') ? 'documentation' : 'api/documentation',
             ],
             'paths' => [
                 /*
