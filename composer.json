@@ -8,6 +8,8 @@
     "require": {
         "php": "^8.2",
         "darkaonline/l5-swagger": "^11.0",
+        "doctrine/annotations": "^2.0",
+        "dedoc/scramble": "^0.13.52",
         "laravel/framework": "^12.0",
         "laravel/reverb": "*",
         "laravel/sanctum": "^4.3",
