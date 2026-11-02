@@ -1,14 +1,14 @@
 {
   "version": 2,
   "functions": {
-    "Dockerfile": {
-      "runtime": "container-backed-function"
+    "api/index.php": {
+      "runtime": "vercel-php@0.7.2"
     }
   },
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "Dockerfile"
+      "dest": "/api/index.php"
     }
   ]
 }
