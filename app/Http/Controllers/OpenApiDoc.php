@@ -11,7 +11,7 @@ use OpenApi\Attributes as OA;
         description: "Documentation de l'API pour l'application de gestion de matériel"
     ),
     servers: [
-        new OA\Server(url: "http://localhost:8000/api")
+        new OA\Server(url: "/")
     ]
 )]
 class OpenApiDoc {}

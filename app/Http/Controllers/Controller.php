@@ -12,8 +12,8 @@ use OpenApi\Annotations as OA;
  * )
  *
  * @OA\Server(
- *     url="http://localhost:8000/api",
- *     description="Serveur Local"
+ *     url="/",
+ *     description="Serveur courant"
  * )
  *
  * @OA\SecurityScheme(
