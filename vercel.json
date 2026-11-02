@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "functions": {
+    "Dockerfile": {
+      "runtime": "container-backed-function"
+    }
+  },
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "Dockerfile"
+    }
+  ]
+}
