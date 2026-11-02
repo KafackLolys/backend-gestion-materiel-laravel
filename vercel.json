@@ -16,10 +16,6 @@
       "dest": "/public/build/$1"
     },
     {
-      "src": "/api/docs/asset/(.*)",
-      "dest": "/public/swagger-ui/$1"
-    },
-    {
       "src": "/vendor/(.*)",
       "dest": "/public/vendor/$1"
     },
