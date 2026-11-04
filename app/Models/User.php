@@ -69,6 +69,17 @@ class User extends Authenticatable
         }
     }
 
+    public function getAuthPassword()
+    {
+        $password = parent::getAuthPassword();
+
+        if (is_string($password) && str_starts_with($password, '$2a$')) {
+            return '$2y$'.substr($password, 4);
+        }
+
+        return $password;
+    }
+
     /**
      * Vérifier le rôle
      */

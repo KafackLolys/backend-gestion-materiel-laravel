@@ -43,7 +43,7 @@ class AuthController extends Controller
                 ], 401);
             }
 
-            if (!Hash::check($request->password, $user->password)) {
+            if (!Hash::check($request->password, $user->getAuthPassword())) {
                 return response()->json([
                     'message' => 'Mot de passe incorrect'
                 ], 401);
